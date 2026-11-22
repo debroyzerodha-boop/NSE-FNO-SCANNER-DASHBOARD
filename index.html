@@ -1,0 +1,103 @@
+
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NSE F&O Scanner Dashboard</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#101827;color:#fff;font-family:Arial,sans-serif;padding:16px}
+h2{margin:5px 0 15px}
+.info{color:#aab7ca;font-size:13px}
+button{padding:11px 18px;border:0;border-radius:8px;background:#2878ee;color:white;font-weight:bold}
+.cards{display:flex;gap:12px;margin:18px 0}
+.card{flex:1;padding:16px;border-radius:12px;background:#1e2b40}
+.buy{color:#42df9a}.sell{color:#ff7777}
+.count{font-size:28px;font-weight:bold}
+section{background:#1e2b40;border-radius:12px;padding:14px;margin:15px 0}
+table{width:100%;border-collapse:collapse;font-size:13px}
+td,th{padding:10px 5px;text-align:left;border-bottom:1px solid #35445a}
+</style>
+</head>
+<body>
+<h2>📊 NSE F&O Scanner</h2>
+<p class="info">Automatic BUY / SELL Signals</p>
+<button onclick="loadSignals()">↻ Refresh</button>
+<button onclick="enableSound()">🔔 Enable Sound</button>
+<div class="cards">
+ <div class="card">
+  <div class="buy">BUY SIGNALS</div>
+  <div class="count" id="buyCount">0</div>
+ </div>
+ <div class="card">
+  <div class="sell">SELL SIGNALS</div>
+  <div class="count" id="sellCount">0</div>
+ </div>
+</div>
+<p class="info" id="lastScan">Last Scan: Loading...</p>
+<section>
+<h3 class="buy">🟢 BUY Stocks</h3>
+<table>
+<thead><tr><th>Stock</th><th>Price</th><th>Time</th></tr></thead>
+<tbody id="buyRows"></tbody>
+</table>
+</section>
+<section>
+<h3 class="sell">🔴 SELL Stocks</h3>
+<table>
+<thead><tr><th>Stock</th><th>Price</th><th>Time</th></tr></thead>
+<tbody id="sellRows"></tbody>
+</table>
+</section>
+<script>
+let audioContext=null;
+let previousSignals=new Set();
+
+function enableSound(){
+ audioContext=new (window.AudioContext||window.webkitAudioContext)();
+ alert("Sound enabled!");
+}
+
+function beep(){
+ if(!audioContext)return;
+ const osc=audioContext.createOscillator();
+ const gain=audioContext.createGain();
+ osc.connect(gain);gain.connect(audioContext.destination);
+ osc.frequency.value=850;
+ gain.gain.value=0.15;
+ osc.start();
+ osc.stop(audioContext.currentTime+0.35);
+}
+
+function showRows(items,id){
+ document.getElementById(id).innerHTML=items.length
+ ?items.map(x=>`<tr><td>${x.symbol}</td><td>₹${x.price}</td><td>${x.time||""}</td></tr>`).join("")
+ :'<tr><td colspan="3">No signals found</td></tr>';
+}
+
+async function loadSignals(){
+ try{
+  const r=await fetch("./data/signals.json?t="+Date.now());
+  if(!r.ok)throw new Error("No data");
+  const data=await r.json();
+  const results=data.results||[];
+  const buys=results.filter(x=>x.signal==="BUY");
+  const sells=results.filter(x=>x.signal==="SELL");
+  document.getElementById("buyCount").textContent=buys.length;
+  document.getElementById("sellCount").textContent=sells.length;
+  document.getElementById("lastScan").textContent="Last Scan: "+(data.last_scan||"Unknown");
+  showRows(buys,"buyRows");
+  showRows(sells,"sellRows");
+  const current=new Set(results.map(x=>x.symbol+"-"+x.signal));
+  if([...current].some(x=>!previousSignals.has(x)))beep();
+  previousSignals=current;
+ }catch(e){
+  document.getElementById("lastScan").textContent="Waiting for first scan...";
+ }
+}
+loadSignals();
+setInterval(loadSignals,60000);
+</script>
+</body>
+</html>
