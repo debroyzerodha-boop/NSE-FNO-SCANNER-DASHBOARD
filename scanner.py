@@ -4,6 +4,7 @@ import pandas as pd
 import requests
 import json
 import os
+from io import StringIO
 from datetime import datetime, time
 import pytz
 
@@ -16,7 +17,6 @@ def get_fno_stocks():
     response = requests.get(NSE_URL, headers=headers, timeout=30)
     response.raise_for_status()
 
-    from io import StringIO
     df = pd.read_csv(StringIO(response.text))
     symbol_col = next(
         (c for c in df.columns if "symbol" in c.lower()), None
@@ -73,39 +73,38 @@ def scan_stock(symbol):
     intraday = intraday.dropna()
     daily = daily.dropna()
 
-    if len(daily) < 20 or len(intraday) < 5:
+    if len(intraday) < 53 or len(daily) < 20:
         return None
 
     intraday.index = pd.to_datetime(intraday.index)
+
     if intraday.index.tz is None:
         intraday.index = intraday.index.tz_localize("UTC")
+
     intraday.index = intraday.index.tz_convert(IST)
-
     intraday["session"] = intraday.index.date
-    sessions = sorted(intraday["session"].unique())
 
-    if len(sessions) < 3:
-        return None
-
-    first_volumes = []
-    for session in sessions[:-1]:
-        day_data = intraday[intraday["session"] == session]
-        if not day_data.empty:
-            first_volumes.append(float(day_data.iloc[0]["Volume"]))
-
-    if len(first_volumes) < 50:
-        return None
-
-    today = sessions[-1]
+    today = datetime.now(IST).date()
     today_data = intraday[intraday["session"] == today].copy()
 
     if len(today_data) < 3:
         return None
 
     first_bar = today_data.iloc[0]
-    average_first_volume = sum(first_volumes[-50:]) / 50
 
-    # Latest completed 15-minute candle
+    # Today's first candle-er ager 50-ti 15-minute candle
+    previous_candles = intraday[
+        intraday.index < today_data.index[0]
+    ]
+
+    previous_50 = previous_candles.tail(50)
+
+    if len(previous_50) < 50:
+        return None
+
+    average_volume = previous_50["Volume"].mean()
+
+    # Shudhu completed 15-minute candles
     now = datetime.now(IST)
     completed = today_data[
         today_data.index + pd.Timedelta(minutes=15) <= now
@@ -119,11 +118,12 @@ def scan_stock(symbol):
     c2 = completed.iloc[-3]
 
     k, d = get_stochastic(daily)
+
     if pd.isna(k.iloc[-1]) or pd.isna(d.iloc[-1]):
         return None
 
     volume_filter = (
-        float(first_bar["Volume"]) > average_first_volume * 5
+        float(first_bar["Volume"]) > float(average_volume) * 5
     )
 
     buy = (
@@ -173,7 +173,9 @@ def main():
             result = scan_stock(symbol)
             if result:
                 results.append(result)
+
             print(f"{i}/{len(stocks)} scanned: {symbol}")
+
         except Exception as error:
             print(f"Error: {symbol} - {error}")
 
