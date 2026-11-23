@@ -1,5 +1,21 @@
 {
-  "last_scan": "23-11-2026 14:07:34",
+  "last_scan": "23-11-2026 14:18:52",
   "buy": [],
-  "sell": []
+  "sell": [
+    {
+      "symbol": "FEDERALBNK",
+      "signal": "SELL",
+      "price": 365.05
+    },
+    {
+      "symbol": "RBLBANK",
+      "signal": "SELL",
+      "price": 394.1
+    },
+    {
+      "symbol": "YESBANK",
+      "signal": "SELL",
+      "price": 17.74
+    }
+  ]
 }
