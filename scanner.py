@@ -1,40 +1,64 @@
 
 import yfinance as yf
 import pandas as pd
-import requests
 import json
 import os
-from io import StringIO
 from datetime import datetime, time
 import pytz
 
 IST = pytz.timezone("Asia/Kolkata")
-NSE_URL = "https://nsearchives.nseindia.com/content/fo/fo_mktlots.csv"
+
+# Manually maintained NSE F&O stock list
+# No external NSE stock-list URL is used
+
+FNO_STOCKS = [
+    "360ONE", "ABB", "ABCAPITAL", "ABFRL", "ACC", "ADANIENSOL",
+    "ADANIENT", "ADANIGREEN", "ADANIPORTS", "ALKEM", "AMBUJACEM",
+    "ANGELONE", "APLAPOLLO", "APOLLOHOSP", "APOLLOTYRE", "ASHOKLEY",
+    "ASIANPAINT", "ASTRAL", "ATUL", "AUBANK", "AUROPHARMA",
+    "AXISBANK", "BAJAJ-AUTO", "BAJAJFINSV", "BAJFINANCE",
+    "BALKRISIND", "BANDHANBNK", "BANKBARODA", "BANKINDIA",
+    "BDL", "BEL", "BERGEPAINT", "BHARATFORG", "BHARTIARTL",
+    "BHEL", "BIOCON", "BLUESTARCO", "BOSCHLTD", "BPCL",
+    "BRITANNIA", "BSE", "BSOFT", "CAMS", "CANBK", "CDSL",
+    "CESC", "CGPOWER", "CHAMBLFERT", "CHOLAFIN", "CIPLA",
+    "COALINDIA", "COFORGE", "COLPAL", "CONCOR", "CROMPTON",
+    "CUMMINSIND", "CYIENT", "DABUR", "DALBHARAT", "DEEPAKNTR",
+    "DELHIVERY", "DIVISLAB", "DIXON", "DLF", "DMART", "DRREDDY",
+    "EICHERMOT", "ETERNAL", "EXIDEIND", "FEDERALBNK", "FORTIS",
+    "GAIL", "GLENMARK", "GMRAIRPORT", "GODREJCP", "GODREJPROP",
+    "GRANULES", "GRASIM", "HAL", "HAVELLS", "HCLTECH",
+    "HDFCAMC", "HDFCBANK", "HDFCLIFE", "HEROMOTOCO", "HFCL",
+    "HINDALCO", "HINDPETRO", "HINDUNILVR", "HUDCO", "ICICIBANK",
+    "ICICIGI", "ICICIPRULI", "IDEA", "IDFCFIRSTB", "IEX",
+    "IGL", "INDHOTEL", "INDIANB", "INDIGO", "INDUSINDBK",
+    "INDUSTOWER", "INFY", "INOXWIND", "IOC", "IRCTC", "IREDA",
+    "IRFC", "ITC", "JINDALSTEL", "JIOFIN", "JSWENERGY",
+    "JSWSTEEL", "JUBLFOOD", "KALYANKJIL", "KEI", "KOTAKBANK",
+    "KPITTECH", "LALPATHLAB", "LAURUSLABS", "LICHSGFIN",
+    "LICI", "LTF", "LT", "LTIM", "LUPIN", "M&M", "MANAPPURAM",
+    "MARICO", "MARUTI", "MAXHEALTH", "MAZDOCK", "MCX", "MFSL",
+    "MGL", "MOTHERSON", "MPHASIS", "MRF", "MUTHOOTFIN",
+    "NATIONALUM", "NAUKRI", "NBCC", "NCC", "NESTLEIND",
+    "NHPC", "NMDC", "NTPC", "NYKAA", "OBEROIRLTY", "OFSS",
+    "OIL", "ONGC", "PAYTM", "PEL", "PERSISTENT", "PETRONET",
+    "PFC", "PHOENIXLTD", "PIDILITIND", "PIIND", "PNB",
+    "POLICYBZR", "POLYCAB", "POONAWALLA", "POWERGRID",
+    "PRESTIGE", "RAMCOCEM", "RBLBANK", "RECLTD", "RELIANCE",
+    "RVNL", "SAIL", "SAMMAANCAP", "SBICARD", "SBILIFE",
+    "SBIN", "SHREECEM", "SHRIRAMFIN", "SIEMENS", "SONACOMS",
+    "SRF", "SUNPHARMA", "SUPREMEIND", "SYNGENE", "TATACHEM",
+    "TATACOMM", "TATACONSUM", "TATAELXSI", "TATAMOTORS",
+    "TATAPOWER", "TATASTEEL", "TCS", "TECHM", "TIINDIA",
+    "TITAGARH", "TITAN", "TORNTPHARM", "TORNTPOWER",
+    "TRENT", "TVSMOTOR", "ULTRACEMCO", "UNIONBANK",
+    "UNITEDBREW", "UPL", "VBL", "VEDL", "VOLTAS",
+    "WIPRO", "YESBANK", "ZYDUSLIFE"
+]
 
 
 def get_fno_stocks():
-    headers = {"User-Agent": "Mozilla/5.0"}
-    response = requests.get(NSE_URL, headers=headers, timeout=30)
-    response.raise_for_status()
-
-    df = pd.read_csv(StringIO(response.text))
-    symbol_col = next(
-        (c for c in df.columns if "symbol" in c.lower()), None
-    )
-
-    if symbol_col is None:
-        raise ValueError("F&O list-e Symbol column paoa jayni")
-
-    stocks = sorted(set(
-        str(x).strip().upper()
-        for x in df[symbol_col].dropna()
-        if str(x).strip()
-    ))
-
-    with open("fno_stocks.json", "w") as f:
-        json.dump(stocks, f, indent=2)
-
-    return stocks
+    return FNO_STOCKS.copy()
 
 
 def get_stochastic(daily):
