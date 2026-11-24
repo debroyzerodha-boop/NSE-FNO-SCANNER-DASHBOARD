@@ -1,5 +1,141 @@
 
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NSE F&O Scanner Dashboard</title>
 
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 15px;
+  background: #101827;
+  color: #ffffff;
+  font-family: Arial, sans-serif;
+}
+
+h2 {
+  margin-top: 5px;
+}
+
+.info {
+  color: #aab7ca;
+  font-size: 13px;
+}
+
+button {
+  padding: 12px 16px;
+  margin: 5px 5px 5px 0;
+  border: none;
+  border-radius: 8px;
+  background: #2878ee;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.cards {
+  display: flex;
+  gap: 12px;
+  margin: 18px 0;
+}
+
+.card {
+  flex: 1;
+  padding: 16px;
+  border-radius: 12px;
+  background: #1e2b40;
+}
+
+.buy {
+  color: #42df9a;
+}
+
+.sell {
+  color: #ff7777;
+}
+
+.count {
+  font-size: 28px;
+  font-weight: bold;
+}
+
+section {
+  background: #1e2b40;
+  border-radius: 12px;
+  padding: 14px;
+  margin: 15px 0;
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+td, th {
+  padding: 11px 6px;
+  text-align: left;
+  border-bottom: 1px solid #35445a;
+}
+
+#connectionStatus {
+  color: #42df9a;
+  font-size: 13px;
+}
+
+@media(max-width:480px) {
+  body {
+    padding: 10px;
+  }
+
+  .card {
+    padding: 12px;
+  }
+
+  table {
+    font-size: 12px;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<h2>📊 NSE F&O Scanner</h2>
+<p class="info">Automatic BUY / SELL Signals</p>
+
+<button onclick="loadSignals()">↻ Refresh</button>
+<button onclick="enableSound()">🔔 Enable Sound</button>
+
+<div class="cards">
+
+  <div class="card">
+    <div class="buy">BUY SIGNALS</div>
+    <div class="count" id="buyCount">0</div>
+  </div>
+
+  <div class="card">
+    <div class="sell">SELL SIGNALS</div>
+    <div class="count" id="sellCount">0</div>
+  </div>
+
+</div>
+
+<p class="info" id="lastScan">Last Scan: Loading...</p>
+<p id="connectionStatus">Connecting...</p>
+
+<section>
+  <h3 class="buy">🟢 BUY Stocks</h3>
+
+  <table>
+    <thead>
       <tr>
         <th>Stock</th>
         <th>Price</th>
@@ -26,63 +162,183 @@
     </thead>
 
     <tbody id="sellRows">
-      <tr><td colspan="3">Loading...</td></tr><!DOCTYPE html>
-<html lang="bn">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NSE F&O Scanner Dashboard</title>
+      <tr><td colspan="3">Loading...</td></tr>
+    </tbody>
+  </table>
+</section>
 
-<style>
-* {
-  box-sizing: border-box;
+<script>
+
+let audioContext = null;
+let previousSignals = null;
+
+function enableSound() {
+
+  const AudioClass =
+    window.AudioContext || window.webkitAudioContext;
+
+  if (!AudioClass) {
+    alert("Your browser does not support sound.");
+    return;
+  }
+
+  if (!audioContext) {
+    audioContext = new AudioClass();
+  }
+
+  if (audioContext.state === "suspended") {
+    audioContext.resume();
+  }
+
+  beep();
+
+  alert("Sound enabled!");
 }
 
-body {
-  margin: 0;
-  padding: 16px;
-  background: #101827;
-  color: #ffffff;
-  font-family: Arial, sans-serif;
+function beep() {
+
+  if (!audioContext) return;
+
+  const osc = audioContext.createOscillator();
+  const gain = audioContext.createGain();
+
+  osc.connect(gain);
+  gain.connect(audioContext.destination);
+
+  osc.frequency.value = 850;
+  gain.gain.value = 0.15;
+
+  osc.start();
+  osc.stop(audioContext.currentTime + 0.35);
 }
 
-h2 {
-  margin: 5px 0 10px;
+function showRows(items, id) {
+
+  const tbody = document.getElementById(id);
+
+  if (!items || items.length === 0) {
+    tbody.innerHTML =
+      '<tr><td colspan="3">No signals found</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = items.map(x => {
+
+    const symbol = escapeHTML(x.symbol || "-");
+    const price = escapeHTML(
+      x.price === undefined || x.price === null
+        ? "-"
+        : String(x.price)
+    );
+    const time = escapeHTML(x.time || "-");
+
+    return `
+      <tr>
+        <td>${symbol}</td>
+        <td>₹${price}</td>
+        <td>${time}</td>
+      </tr>
+    `;
+
+  }).join("");
 }
 
-.info {
-  color: #aab7ca;
-  font-size: 13px;
+function escapeHTML(value) {
+
+  return String(value).replace(/[&<>"']/g, function(c) {
+    return {
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;"
+    }[c];
+  });
 }
 
-button {
-  padding: 11px 16px;
-  margin: 5px 5px 5px 0;
-  
+async function loadSignals() {
+
+  try {
+
     const response = await fetch(
       "./data/signals.json?t=" + Date.now(),
       { cache: "no-store" }
     );
 
-    if 
-    document.getElementById("buyCount").textContentgnals = current;
+    if (!response.ok) {
+      throw new Error("JSON file not found");
+    }
+
+    const data = await response.json();
+
+    // Read Scanner JSON
+    const buys = Array.isArray(data.buy)
+      ? data.buy
+      : [];
+
+    const sells = Array.isArray(data.sell)
+      ? data.sell
+      : [];
+
+    const results = [
+      ...buys.map(x => ({...x, signal: "BUY"})),
+      ...sells.map(x => ({...x, signal: "SELL"}))
+    ];
+
+    // Update counts
+    document.getElementById("buyCount").textContent =
+      buys.length;
+
+    document.getElementById("sellCount").textContent =
+      sells.length;
+
+    // Update scan time
+    document.getElementById("lastScan").textContent =
+      "Last Scan: " + (data.last_scan || "Unknown");
+
+    // Update status
+    document.getElementById("connectionStatus").textContent =
+      "🟢 JSON Connected | Dashboard Auto Refresh: 1 Minute";
+
+    // Show stock lists
+    showRows(buys, "buyRows");
+    showRows(sells, "sellRows");
+
+    // Detect only new signals
+    const current = new Set(
+      results.map(x => x.symbol + "-" + x.signal)
+    );
+
+    // No sound on first page load
+    if (previousSignals !== null) {
+
+      const newSignal = [...current].some(
+        x => !previousSignals.has(x)
+      );
+
+      if (newSignal) {
+        beep();
+      }
+    }
+
+    previousSignals = current;
 
   } catch (error) {
 
     document.getElementById("connectionStatus").textContent =
-      "🔴 JSON connection error";
+      "🔴 JSON Connection Error";
 
     document.getElementById("lastScan").textContent =
       "Could not load scan data";
 
-    console.log(error);
+    console.log("Scanner error:", error);
   }
 }
 
-// First load
+// Load immediately
 loadSignals();
 
-// Dashboard refresh every 60 seconds
+// Auto refresh every 60 seconds
 setInterval(loadSignals, 60000);
 
 </script>
