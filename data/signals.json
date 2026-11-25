@@ -1,11 +1,5 @@
 {
-  "last_scan": "25-11-2026 13:41:31",
-  "buy": [
-    {
-      "symbol": "SBICARD",
-      "signal": "BUY",
-      "price": 589.55
-    }
-  ],
+  "last_scan": "25-11-2026 14:48:57",
+  "buy": [],
   "sell": []
 }
