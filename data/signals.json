@@ -1,5 +1,11 @@
 {
-  "last_scan": "25-11-2026 11:15:18",
+  "last_scan": "25-11-2026 12:05:03",
   "buy": [],
-  "sell": []
+  "sell": [
+    {
+      "symbol": "TORNTPOWER",
+      "signal": "SELL",
+      "price": 1173.9
+    }
+  ]
 }
