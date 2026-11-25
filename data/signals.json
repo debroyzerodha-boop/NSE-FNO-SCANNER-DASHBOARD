@@ -1,11 +1,5 @@
 {
-  "last_scan": "25-11-2026 10:05:53",
+  "last_scan": "25-11-2026 10:22:44",
   "buy": [],
-  "sell": [
-    {
-      "symbol": "MFSL",
-      "signal": "SELL",
-      "price": 1504.5
-    }
-  ]
+  "sell": []
 }
