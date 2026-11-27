@@ -1,11 +1,5 @@
 {
-  "last_scan": "26-11-2026 14:40:35",
-  "buy": [
-    {
-      "symbol": "TORNTPHARM",
-      "signal": "BUY",
-      "price": 5012.9
-    }
-  ],
+  "last_scan": "27-11-2026 09:19:03",
+  "buy": [],
   "sell": []
 }
