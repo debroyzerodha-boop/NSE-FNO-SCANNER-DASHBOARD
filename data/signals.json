@@ -1,5 +1,11 @@
 {
-  "last_scan": "27-11-2026 12:14:58",
-  "buy": [],
+  "last_scan": "27-11-2026 13:38:46",
+  "buy": [
+    {
+      "symbol": "KALYANKJIL",
+      "signal": "BUY",
+      "price": 655.8
+    }
+  ],
   "sell": []
 }
